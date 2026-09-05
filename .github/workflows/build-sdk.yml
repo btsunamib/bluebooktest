@@ -7,6 +7,8 @@ on:
 jobs:
   build-windows-sdk:
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -61,8 +63,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: android-sdk-windows.zip
-          tag_name: v1.0
-          name: Android SDK Windows Offline
+          tag_name: v1.${{ github.run_number }}
+          name: "Android SDK Windows Offline v1.${{ github.run_number }}"
           body: |
             Complete Android SDK (Windows binaries) for offline use.
             - platforms;android-35
