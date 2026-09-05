@@ -39,7 +39,7 @@ jobs:
           $env:ANDROID_SDK_ROOT = $sdkRoot
           $yes = "y`n" * 30
           $yes | & $sdkmanager --licenses 2>$null
-          & $sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" 2>&1 | Select-Object -Last 10
+          & $sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358" 2>&1 | Select-Object -Last 10
 
       - name: Package SDK (platforms + build-tools + platform-tools)
         shell: pwsh
@@ -50,6 +50,7 @@ jobs:
           Copy-Item "$sdkRoot\platforms" "$stage\platforms" -Recurse
           Copy-Item "$sdkRoot\build-tools" "$stage\build-tools" -Recurse
           Copy-Item "$sdkRoot\platform-tools" "$stage\platform-tools" -Recurse
+          Copy-Item "$sdkRoot\ndk" "$stage\ndk" -Recurse
           $zipPath = "$env:GITHUB_WORKSPACE\android-sdk-windows.zip"
           Compress-Archive -Path "$stage\*" -DestinationPath $zipPath -Force
           $size = (Get-Item $zipPath).Length
@@ -58,6 +59,7 @@ jobs:
           Test-Path "$stage\platforms\android-36\android.jar"
           Test-Path "$stage\build-tools\36.0.0\aapt2.exe"
           Test-Path "$stage\platform-tools\adb.exe"
+          Test-Path "$stage\ndk\28.2.13676358\ndk-build.cmd"
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
