@@ -1,0 +1,71 @@
+name: Build Android SDK Offline Package
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build-windows-sdk:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android command-line tools
+        shell: pwsh
+        run: |
+          $sdkRoot = "$env:RUNNER_TEMP\android-sdk"
+          New-Item -ItemType Directory -Force -Path "$sdkRoot\cmdline-tools"
+          $url = "https://dl.google.com/android/repository/commandlinetools-win-11076708_latest.zip"
+          Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\clt.zip"
+          Expand-Archive -Path "$env:TEMP\clt.zip" -DestinationPath "$sdkRoot\cmdline-tools" -Force
+          Move-Item "$sdkRoot\cmdline-tools\cmdline-tools" "$sdkRoot\cmdline-tools\latest"
+          Write-Host "CLT installed to $sdkRoot"
+
+      - name: Accept licenses and install SDK packages
+        shell: pwsh
+        run: |
+          $sdkRoot = "$env:RUNNER_TEMP\android-sdk"
+          $sdkmanager = "$sdkRoot\cmdline-tools\latest\bin\sdkmanager.bat"
+          $env:ANDROID_HOME = $sdkRoot
+          $env:ANDROID_SDK_ROOT = $sdkRoot
+          $yes = "y`n" * 30
+          $yes | & $sdkmanager --licenses 2>$null
+          & $sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" 2>&1 | Select-Object -Last 10
+
+      - name: Package SDK (platforms + build-tools + platform-tools)
+        shell: pwsh
+        run: |
+          $sdkRoot = "$env:RUNNER_TEMP\android-sdk"
+          $stage = "$env:TEMP\stage"
+          New-Item -ItemType Directory -Force -Path $stage
+          Copy-Item "$sdkRoot\platforms" "$stage\platforms" -Recurse
+          Copy-Item "$sdkRoot\build-tools" "$stage\build-tools" -Recurse
+          Copy-Item "$sdkRoot\platform-tools" "$stage\platform-tools" -Recurse
+          $zipPath = "$env:GITHUB_WORKSPACE\android-sdk-windows.zip"
+          Compress-Archive -Path "$stage\*" -DestinationPath $zipPath -Force
+          $size = (Get-Item $zipPath).Length
+          Write-Host "Zip size: $([math]::Round($size/1MB,1)) MB"
+          # Verify key files present
+          Test-Path "$stage\platforms\android-35\android.jar"
+          Test-Path "$stage\build-tools\35.0.0\aapt2.exe"
+          Test-Path "$stage\platform-tools\adb.exe"
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: android-sdk-windows.zip
+          tag_name: v1.0
+          name: Android SDK Windows Offline
+          body: |
+            Complete Android SDK (Windows binaries) for offline use.
+            - platforms;android-35
+            - build-tools;35.0.0
+            - platform-tools
+            Built for minSdk 26 / compileSdk 35.
