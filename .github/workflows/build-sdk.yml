@@ -39,7 +39,7 @@ jobs:
           $env:ANDROID_SDK_ROOT = $sdkRoot
           $yes = "y`n" * 30
           $yes | & $sdkmanager --licenses 2>$null
-          & $sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" 2>&1 | Select-Object -Last 10
+          & $sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" 2>&1 | Select-Object -Last 10
 
       - name: Package SDK (platforms + build-tools + platform-tools)
         shell: pwsh
@@ -55,8 +55,8 @@ jobs:
           $size = (Get-Item $zipPath).Length
           Write-Host "Zip size: $([math]::Round($size/1MB,1)) MB"
           # Verify key files present
-          Test-Path "$stage\platforms\android-35\android.jar"
-          Test-Path "$stage\build-tools\35.0.0\aapt2.exe"
+          Test-Path "$stage\platforms\android-36\android.jar"
+          Test-Path "$stage\build-tools\36.0.0\aapt2.exe"
           Test-Path "$stage\platform-tools\adb.exe"
 
       - name: Upload to GitHub Release
@@ -67,7 +67,7 @@ jobs:
           name: "Android SDK Windows Offline v1.${{ github.run_number }}"
           body: |
             Complete Android SDK (Windows binaries) for offline use.
-            - platforms;android-35
-            - build-tools;35.0.0
+            - platforms;android-36
+            - build-tools;36.0.0
             - platform-tools
-            Built for minSdk 26 / compileSdk 35.
+            Built for Flutter 3.47 / compileSdk 36, minSdk 26.
